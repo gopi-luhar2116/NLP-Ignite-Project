@@ -10,10 +10,13 @@ def extract_skills(processed_words):
 
     resume_text = " ".join(processed_words)
 
+    processed_set = set(processed_words)
+
     for skill in skill_list:
 
-        if skill.lower() in resume_text:
+        skill_words = skill.lower().split()
 
+        if all(word in processed_set for word in skill_words):
             found_skills.append(skill.title())
 
     return sorted(list(set(found_skills)))

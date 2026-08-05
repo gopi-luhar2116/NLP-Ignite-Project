@@ -1,0 +1,65 @@
+/* Background */
+
+.stApp{
+    background:#0F172A;
+    color:white;
+}
+
+/* Headings */
+
+h1,h2,h3,h4,h5,h6{
+    color:white;
+}
+
+/* Text */
+
+p,label,span{
+    color:#CBD5E1;
+}
+
+/* Cards */
+
+div[data-testid="stMetric"]{
+    background:#1E293B;
+    border-radius:15px;
+    padding:20px;
+    border:1px solid #334155;
+}
+
+/* Buttons */
+
+.stButton>button{
+    background:#2563EB;
+    color:white;
+    border:none;
+    border-radius:12px;
+    height:50px;
+    width:100%;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.stButton>button:hover{
+    background:#1D4ED8;
+}
+
+/* Text Area */
+
+textarea{
+    background:#1E293B !important;
+    color:white !important;
+}
+
+/* File uploader */
+
+section[data-testid="stFileUploader"]{
+    background:#1E293B;
+    border-radius:15px;
+    padding:15px;
+}
+
+/* Progress Bar */
+
+.stProgress>div>div{
+    background:#3B82F6;
+}
