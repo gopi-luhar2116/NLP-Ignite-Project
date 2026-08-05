@@ -31,11 +31,10 @@ if st.button("Analyze Resume"):
 
         st.subheader("Extracted Resume Text")
 
-        with st.expander("View Extracted Resume Text"):
-            with st.expander("View Original Resume Text"):
-                st.write(resume_text)
+        with st.expander("View Original Resume Text"):
+            st.write(resume_text)
 
-            with st.expander("View Processed Resume Tokens"):
-                st.write(processed_resume)
+        with st.expander("View Processed Resume Tokens"):
+            st.write(", ".join(processed_resume))
 
 
