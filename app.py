@@ -1,227 +1,224 @@
+import streamlit as st
+
 from modules.pdf_reader import extract_text_from_pdf
 from modules.preprocess import preprocess_text
 from modules.skill_extractor import extract_skills
-from modules.matcher import compare_skills
+from modules.matcher import compare_skills, calculate_semantic_similarity
 from modules.ats_score import calculate_ats_score
 from modules.suggestions import generate_suggestions
-import streamlit as st
+
+# ---------------- PAGE CONFIG ---------------- #
+
+st.set_page_config(
+    page_title="Resume Matcher & ATS Optimizer",
+    page_icon="📄",
+    layout="wide"
+)
+
+# ---------------- CSS ---------------- #
 
 def load_css():
-    with open("style.css") as f:
-        st.markdown(
-            f"<style>{f.read()}</style>",
-            unsafe_allow_html=True
-        )
+    try:
+        with open("style.css") as f:
+            st.markdown(
+                f"<style>{f.read()}</style>",
+                unsafe_allow_html=True
+            )
+    except:
+        pass
 
 load_css()
 
-def metric_card(title, value, color="#FFFFFF"):
-    st.markdown(f"""
-    <div style="
-        background:#1E293B;
-        padding:20px;
-        border-radius:15px;
-        border:1px solid #334155;
-        text-align:center;
-        min-height:120px;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-    ">
-
-        <div style="
-            color:#94A3B8;
-            font-size:16px;
-            font-weight:500;
-            margin-bottom:10px;
-        ">
-            {title}
-        </div>
-
-        <div style="
-            color:{color};
-            font-size:36px;
-            font-weight:700;
-        ">
-            {value}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+# ---------------- HEADER ---------------- #
 
 st.markdown("""
-<div style='padding:25px 10px 10px 10px;'>
-
-<h1 style='margin-bottom:5px;
-font-size:48px;
-font-weight:700;
-color:white;'>
-
+<h1 style='margin-bottom:0px;'>
 Resume Matcher & ATS Optimizer
-
 </h1>
 
-<p style='font-size:18px;
-color:#94A3B8;
-margin-top:0;'>
-
-NLP-powered resume analysis that evaluates compatibility with a job description and provides actionable ATS recommendations.
-
+<p style='color:gray;font-size:18px;'>
+Analyze your resume against a job description using NLP
+to evaluate ATS compatibility and identify missing skills.
 </p>
-
-</div>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([1,1], gap="large")
+st.divider()
 
-with col1:
+# ---------------- INPUT SECTION ---------------- #
 
-    st.markdown("### Resume")
+left, right = st.columns(2)
 
+with left:
+    st.subheader("Resume")
     uploaded_file = st.file_uploader(
-         "",
+        "Upload PDF Resume",
         type=["pdf"]
     )
 
-with col2:
-
-    st.markdown("### Job Description")
-
+with right:
+    st.subheader("Job Description")
     job_description = st.text_area(
         "",
-        height=240,
-        placeholder="Paste the complete job description..."
+        height=250,
+        placeholder="Paste the complete job description here..."
     )
 
-analyze = st.button("Analyze Resume", use_container_width=True)
-    
+st.write("")
+
+analyze = st.button(
+    "Analyze Resume",
+    use_container_width=True
+)
+
+# ---------------- ANALYSIS & RESULTS ---------------- #
+
 if analyze:
 
     if uploaded_file is None:
         st.error("Please upload a resume.")
+        st.stop()
 
+    if job_description.strip() == "":
+        st.error("Please paste a job description.")
+        st.stop()
+
+    with st.spinner("Analyzing Resume..."):
+
+        # Extract Resume
+        resume_text = extract_text_from_pdf(uploaded_file)
+
+        # Preprocess
+        processed_resume = preprocess_text(resume_text)
+        processed_job = preprocess_text(job_description)
+
+        # Extract Skills
+        resume_skills = extract_skills(processed_resume)
+        job_skills = extract_skills(processed_job)
+
+        # Compare Skills
+        matched_skills, missing_skills = compare_skills(
+            resume_skills,
+            job_skills
+        )
+
+        # Recommendations
+        recommendations = generate_suggestions(
+            missing_skills,
+            0
+        )
+
+    # ---------------- DUAL SCORING LOGIC ---------------- #
+    raw_resume_str = " ".join(processed_resume)
+    raw_job_str = " ".join(processed_job)
+    
+    # Calculate Semantic Cosine Similarity via TF-IDF
+    semantic_score = calculate_semantic_similarity(raw_resume_str, raw_job_str)
+    
+    # Hybrid Final ATS Score (60% Skill Match + 40% Semantic Similarity)
+    keyword_score = calculate_ats_score(matched_skills, job_skills)
+    final_score = round((keyword_score * 0.6) + (semantic_score * 0.4))
+
+    st.markdown("---")
+    st.markdown("## 📊 Hybrid ATS Analysis")
+
+    st.progress(int(final_score))
+
+    if final_score >= 80:
+        st.success(f"🚀 High Match Potential • {final_score}% Overall Score")
+    elif final_score >= 60:
+        st.info(f"📈 Moderate Match • {final_score}% Overall Score")
     else:
+        st.error(f"⚠️ Low Match • {final_score}% Overall Score")
 
-        if uploaded_file.type == "application/pdf":
+    st.write("")
 
-            resume_text = extract_text_from_pdf(uploaded_file)
-            processed_resume = preprocess_text(resume_text)
-            resume_skills = extract_skills(processed_resume)
-            processed_job = preprocess_text(job_description)
-            job_skills = extract_skills(processed_job)
-            matched_skills, missing_skills = compare_skills(
-                resume_skills,
-                job_skills
-            )
-            ats_score = calculate_ats_score(
-                matched_skills,
-                job_skills
-            )
-            recommendations = generate_suggestions(
-                missing_skills,
-                ats_score
-            )
+    # ---------------- METRIC CARDS ---------------- #
+    c1, c2, c3, c4 = st.columns(4)
 
-            st.divider()
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{final_score}%</div>
+            <div class="metric-label">Overall Match</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            st.markdown("## Analysis Overview")
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #a78bfa;">{semantic_score}%</div>
+            <div class="metric-label">Semantic Similarity</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            col1, col2, col3, col4 = st.columns(4)
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #4ade80;">{len(matched_skills)}</div>
+            <div class="metric-label">Matched Skills</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            with col1:
-                metric_card("Compatibility", f"{ats_score:.0f}%", "#3B82F6")
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: #f87171;">{len(missing_skills)}</div>
+            <div class="metric-label">Missing Skills</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            with col2:
-                metric_card("Resume Skills", len(resume_skills), "#22C55E")
+    # ---------------- SKILL GAP ANALYSIS ---------------- #
+    st.divider()
+    st.header("🎯 Skill Gap Breakdown")
 
-            with col3:
-                metric_card("Missing Skills", len(missing_skills), "#EF4444")
+    s_left, s_right = st.columns(2)
 
-            with col4:
-                metric_card("Matched Skills", len(matched_skills), "#FACC15")
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            if ats_score >= 80:
-                st.success("Excellent Compatibility")
-
-            elif ats_score >= 60:
-                st.warning("Good Compatibility")
-
-            else:
-                st.error("Needs Improvement")
-
+    with s_left:
+        st.subheader("✅ Matched Keywords")
+        if matched_skills:
+            matched_html = "".join([
+                f"<span style='background-color: #064e3b; color: #6ee7b7; border: 1px solid #047857; "
+                f"padding: 6px 14px; border-radius: 20px; margin: 4px; display: inline-block; "
+                f"font-size: 14px; font-weight: 500;'>{s.title()}</span>"
+                for s in matched_skills
+            ])
+            st.markdown(matched_html, unsafe_allow_html=True)
         else:
+            st.info("No explicit skills matched.")
 
-            resume_text = uploaded_file.read().decode("utf-8")
-            processed_resume = preprocess_text(resume_text)
-            #resume_skills = extract_skills(processed_resume)
-
-        with st.expander("⚙ Developer View (NLP Processing)"):
-
-            st.subheader("Original Resume")
-
-            st.write(resume_text)
-
-            st.subheader("Processed Tokens")
-
-            st.write(" ".join(processed_resume))
-
-        st.subheader("🎯 Skills Detected")
-
-        cols = st.columns(3)
-
-        for i, skill in enumerate(resume_skills):
-            cols[i % 3].success(skill)
-
-        st.subheader("💼 Job Skills Required")
-
-        if job_skills:
-            cols = st.columns(3)
-
-            for i, skill in enumerate(job_skills):
-                cols[i % 3].success(skill)
-
+    with s_right:
+        st.subheader("🚨 Priority Missing Keywords")
+        if missing_skills:
+            missing_html = "".join([
+                f"<span style='background-color: #7f1d1d; color: #fca5a5; border: 1px solid #b91c1c; "
+                f"padding: 6px 14px; border-radius: 20px; margin: 4px; display: inline-block; "
+                f"font-size: 14px; font-weight: 500;'>{s.title()}</span>"
+                for s in missing_skills
+            ])
+            st.markdown(missing_html, unsafe_allow_html=True)
         else:
-            st.warning("No job skills detected.")
+            st.success("All required skills found in resume!")
 
-        st.header("📈 Resume vs Job Comparison")
+    # ---------------- ACTIONABLE RECOMMENDATIONS ---------------- #
+    st.divider()
+    st.header("💡 Actionable Recommendations")
 
-        comparison = []
+    if missing_skills:
+        st.markdown(f"""
+        <div class="suggestion-card">
+            <b>🔑 High Impact Addition:</b> Add top missing keywords like <b>{', '.join([s.title() for s in missing_skills[:3]])}</b> to your skill list or project bullet points.
+        </div>
+        <div class="suggestion-card">
+            <b>📝 Contextual Alignment:</b> Incorporate these technical terms naturally in your experience section rather than just listing them in a skills block.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.success("Your resume aligns exceptionally well with the target job description.")
 
-        for skill in sorted(set(job_skills)):
-
-            comparison.append({
-            "Job Requirement": skill,
-            "Found in Resume": "✅" if skill.lower() in [s.lower() for s in resume_skills] else "❌"
-        })
-
-        st.table(comparison)
-
-        st.subheader("🎯 ATS Match Score")
-
-        st.progress(int(ats_score))
-
-        if ats_score >= 80:
-            st.success(f"🎯 ATS Score : {ats_score}%")
-
-        elif ats_score >= 60:
-            st.warning(f"🎯 ATS Score : {ats_score}%")
-
-        else:
-            st.error(f"🎯 ATS Score : {ats_score}%")
-
-        st.subheader("💡 ATS Recommendations")
-
-        for suggestion in recommendations:
-            st.info(suggestion)
-
-        st.subheader("📊 Analysis Summary")
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric("Resume Skills", len(resume_skills))
-
-        col2.metric("Required Skills", len(job_skills))
-
-        col3.metric("Matched Skills", len(matched_skills))
+    # ---------------- DEBUG / PROCESSED TEXT ---------------- #
+    st.write("")
+    with st.expander("🔍 View Processed Text Tokens"):
+        st.write("**Processed Resume Tokens:**")
+        st.caption(" ".join(processed_resume))
+        st.write("**Processed Job Description Tokens:**")
+        st.caption(" ".join(processed_job))

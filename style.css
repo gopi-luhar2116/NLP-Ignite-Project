@@ -1,65 +1,33 @@
-/* Background */
-
-.stApp{
-    background:#0F172A;
-    color:white;
+/* Card Container */
+.metric-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Headings */
-
-h1,h2,h3,h4,h5,h6{
-    color:white;
+.metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-bottom: 4px;
 }
 
-/* Text */
-
-p,label,span{
-    color:#CBD5E1;
+.metric-label {
+    font-size: 14px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Cards */
-
-div[data-testid="stMetric"]{
-    background:#1E293B;
-    border-radius:15px;
-    padding:20px;
-    border:1px solid #334155;
-}
-
-/* Buttons */
-
-.stButton>button{
-    background:#2563EB;
-    color:white;
-    border:none;
-    border-radius:12px;
-    height:50px;
-    width:100%;
-    font-size:18px;
-    font-weight:bold;
-}
-
-.stButton>button:hover{
-    background:#1D4ED8;
-}
-
-/* Text Area */
-
-textarea{
-    background:#1E293B !important;
-    color:white !important;
-}
-
-/* File uploader */
-
-section[data-testid="stFileUploader"]{
-    background:#1E293B;
-    border-radius:15px;
-    padding:15px;
-}
-
-/* Progress Bar */
-
-.stProgress>div>div{
-    background:#3B82F6;
+/* Suggestion Box */
+.suggestion-card {
+    background-color: #1e293b;
+    border-left: 4px solid #38bdf8;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 4px 8px 8px 4px;
+    color: #e2e8f0;
 }
